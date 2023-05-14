@@ -1,2 +1,2 @@
-# goproject
-my golang project
+# gopkg
+some common packages
