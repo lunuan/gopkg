@@ -40,7 +40,7 @@ type kvEncoder struct {
 	reflectEnc zapcore.ReflectedEncoder
 }
 
-func NewkvEncoder(cfg zapcore.EncoderConfig) zapcore.Encoder {
+func NewkvEncoder(cfg zapcore.EncoderConfig) *kvEncoder {
 	// spaced := false
 	if cfg.SkipLineEnding {
 		cfg.LineEnding = ""

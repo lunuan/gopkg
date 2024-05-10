@@ -61,7 +61,7 @@ func initZapLogger(conf *Config) *zap.Logger {
 	//log encoder
 	var encoder zapcore.Encoder
 	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.000")
+	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05,000")
 	// encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 
 	encoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
@@ -81,6 +81,9 @@ func initZapLogger(conf *Config) *zap.Logger {
 	case "console":
 		encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		encoder = zapcore.NewConsoleEncoder(encoderConfig)
+	case "common":
+		encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		encoder = NewCommonEncoder(encoderConfig)
 	default:
 		encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		encoder = NewkvEncoder(encoderConfig)

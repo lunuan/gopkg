@@ -5,7 +5,7 @@ import "testing"
 func TestKvEncoder(t *testing.T) {
 
 	log := NewSugaredLogger(&Config{
-		Format: "",
+		Format: "common",
 		Level:  "debug",
 	})
 
