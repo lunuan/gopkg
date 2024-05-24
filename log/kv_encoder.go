@@ -370,7 +370,7 @@ func (enc *kvEncoder) appendComplex(val complex128, precision int) {
 	// enc.addElementSeparator()
 	// Cast to a platform-independent, fixed-size type.
 	r, i := float64(real(val)), float64(imag(val))
-	enc.buf.AppendByte('"')
+	// enc.buf.AppendByte('"')
 	// Because we're always in a quoted string, we can use strconv without
 	// special-casing NaN and +/-Inf.
 	enc.buf.AppendFloat(r, precision)
@@ -381,7 +381,7 @@ func (enc *kvEncoder) appendComplex(val complex128, precision int) {
 	}
 	enc.buf.AppendFloat(i, precision)
 	enc.buf.AppendByte('i')
-	enc.buf.AppendByte('"')
+	// enc.buf.AppendByte('"')
 }
 
 func (enc *kvEncoder) AddArray(key string, arr zapcore.ArrayMarshaler) error {
@@ -431,9 +431,9 @@ func (enc *kvEncoder) AppendDuration(val time.Duration) {
 }
 
 func (enc *kvEncoder) AppendString(val string) {
-	enc.buf.AppendByte('"')
+	// enc.buf.AppendByte('"')
 	enc.safeAddString(val)
-	enc.buf.AppendByte('"')
+	// enc.buf.AppendByte('"')
 }
 
 func (enc *kvEncoder) AppendTime(val time.Time) {
