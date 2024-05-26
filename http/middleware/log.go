@@ -15,25 +15,102 @@ import (
 	"github.com/lunuan/gopkg/conv"
 	"github.com/lunuan/gopkg/log"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
+var ginzapConfig *ginzap.Config
 var logger *zap.Logger
 
 // init init logger use default config
 func init() {
-	def := &log.Config{
+	cfg := &log.Config{
 		Level:  "debug",
-		Format: "json",
+		Format: "common",
 	}
-	InitLoggerMiddleware(def)
+	InitLogMiddleware(cfg, &ginzap.Config{})
 }
 
-func InitLoggerMiddleware(cfg *log.Config) {
+func InitLogMiddleware(cfg *log.Config, GinzapConfig *ginzap.Config) {
+	ginzapConfig = GinzapConfig
 	logger = log.NewLogger(cfg)
 }
 
 func Logger() gin.HandlerFunc {
-	return ginzap.Ginzap(logger, time.RFC3339, true)
+	return GinzapWithConfig(logger, ginzapConfig)
+}
+
+// GinzapWithConfig returns a gin.HandlerFunc using configs
+func GinzapWithConfig(logger ginzap.ZapLogger, conf *ginzap.Config) gin.HandlerFunc {
+	skipPaths := make(map[string]bool, len(conf.SkipPaths))
+	for _, path := range conf.SkipPaths {
+		skipPaths[path] = true
+	}
+
+	return func(c *gin.Context) {
+		start := time.Now()
+		// some evil middlewares modify this values
+		path := c.Request.URL.Path
+		query := c.Request.URL.RawQuery
+		c.Next()
+		track := true
+
+		if _, ok := skipPaths[path]; ok || (conf.Skipper != nil && conf.Skipper(c)) {
+			track = false
+		}
+
+		if track && len(conf.SkipPathRegexps) > 0 {
+			for _, reg := range conf.SkipPathRegexps {
+				if !reg.MatchString(path) {
+					continue
+				}
+
+				track = false
+				break
+			}
+		}
+
+		if track {
+			end := time.Now()
+			duration := end.Sub(start) * 1000
+			// if conf.UTC {
+			// 	end = end.UTC()
+			// }
+
+			fields := []zapcore.Field{
+				zap.Int("status", c.Writer.Status()),
+				zap.String("method", c.Request.Method),
+				zap.String("path", path),
+				zap.Duration("duration", duration),
+				zap.String("ip", c.ClientIP()),
+				zap.String("user-agent", c.Request.UserAgent()),
+			}
+			if query != "" {
+				fields = append(fields, zap.String("query", query))
+			}
+			// if conf.TimeFormat != "" {
+			// 	fields = append(fields, zap.String("time", end.Format(conf.TimeFormat)))
+			// }
+
+			if conf.Context != nil {
+				fields = append(fields, conf.Context(c)...)
+			}
+
+			if len(c.Errors) > 0 {
+				// Append error field if this is an erroneous request.
+				for _, e := range c.Errors.Errors() {
+					logger.Error(e, fields...)
+				}
+			} else {
+				if zl, ok := logger.(*zap.Logger); ok {
+					zl.Log(conf.DefaultLevel, "", fields...)
+				} else if conf.DefaultLevel == zapcore.InfoLevel {
+					logger.Info(path, fields...)
+				} else {
+					logger.Error(path, fields...)
+				}
+			}
+		}
+	}
 }
 
 func Recovery() gin.HandlerFunc {
